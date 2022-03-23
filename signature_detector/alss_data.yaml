@@ -1,0 +1,6 @@
+
+train: /yolov5/dataset/images/train
+val: /yolov5/dataset/images/val
+
+nc: 1
+names: ['signature']
