@@ -5,9 +5,10 @@ import cv2 as cv
 import numpy as np
 import pandas as pd
 from sklearn.metrics import mean_absolute_error
+from mark_img import mark_detection
 
 
-def rmse(predictions, targets):
+def root_mean_squared_error(predictions, targets):
     return np.sqrt(((predictions - targets) ** 2).mean())
 
 
@@ -53,28 +54,11 @@ def count_signatures_with_iou(result_pred, list_sig, thr=0.5):
             if current_iou > best_iou:
                 best_iou = current_iou
 
-        if conf > thr and best_iou > thr:
+        if conf > thr and best_iou >= 0.5:
             object_count += 1
             best_iou = 0
 
     return object_count
-
-
-# Conta as assinaturas
-def count_signatures(result_pred, thr=0.5):
-    object_count = 0
-    elements_conf = result_pred.confidence
-    for element in elements_conf:
-        if element > thr:
-            object_count += 1
-
-    return object_count
-
-
-def load_model():
-    mdl = torch.hub.load('C:/Users/Alysson/PycharmProjects/yolov5', 'custom',
-                         path='signature_detector/model_v2_yoloM/best.pt', source='local')
-    return mdl
 
 
 def read_json_gt(json_pth, filename):
@@ -84,45 +68,50 @@ def read_json_gt(json_pth, filename):
 
     sig_count = data['count_sig']
     sig_list = data['signatures']
-    return sig_count, sig_list
+    img_name = data['img']
+    return sig_count, sig_list, img_name
 
 
-def infer_sign(path_img, json_path):
+def load_model():
+    mdl = torch.hub.load('C:/Users/Alysson/PycharmProjects/yolov5', 'custom',
+                         path='signature_detector/model_v3_trlr/best.pt', source='local')
+    return mdl
+
+
+def test_iou(path_img, json_path):
     model = load_model()
 
     gt_list = []
+    list_of_sigs = []
     pred_list = []
+    detection_list = []
+    thr_list = [0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9]
 
-    for (root, dirnames, files) in os.walk(path_img):
+    # only detect
+    for (root, dirnames, files) in os.walk(json_path):
         for filename in files:
-            current_img = cv.imread(os.path.join(path_img, filename))
-            gt_filename = filename.split('.')[0]+'.json'
-
-            sig_qtd, sig_list = read_json_gt(json_path, gt_filename)
+            sig_qtd, sig_list, img_name = read_json_gt(json_path, filename)
             gt_list.append(sig_qtd)
+            # list_of_sigs.append(sig_list)
+
+            new_img_name = img_name.split('.')[0]+'.jpg'
+            current_img = cv.imread(os.path.join(path_img, new_img_name))
 
             detection = model(current_img, size=1280)
-            detection.save()
-            # pred_list.append(count_signatures_with_iou(result_pred=detection.pandas().xyxy[0], list_sig=sig_list))
-            pred_list.append(count_signatures(result_pred=detection.pandas().xyxy[0]))
+            detection_list.append(detection)
+            # detection.save()
+            # pred_list.append(count_signatures(result_pred=detection.pandas().xyxy[0], thr=0.5))
+            mark_detection(new_img_name, current_img, sig_list, detection.pandas().xyxy[0])
 
             print('File {} processed.'.format(filename))
 
-    root_mean_squared_error = rmse(predictions=np.array(pred_list), targets=np.array(gt_list))
-    mae = mean_absolute_error(y_true=gt_list, y_pred=pred_list)
-    with open('model_metrics.json', 'w', encoding='utf-8') as result_file:
-        result_file.write(json.dumps({
-            'result': {
-                'mae': mae,
-                'rmse': root_mean_squared_error
-            }
-        }))
-        result_file.close()
+
+        print('--------------------------------')
 
 
 if __name__ == '__main__':
-    img_path = r'C:\Users\Alysson\Downloads\tcc_dataset_v2\partition\test_partition\img'
-    gt_path = r'C:\Users\Alysson\Downloads\tcc_dataset_v2\partition\test_partition\json_gt'
+    img_path = r'C:\Users\Alysson\Downloads\TCC_dataset_xerox\LoteCertidao\yolo\images\train'
+    gt_path = r'C:\Users\Alysson\Downloads\TCC_dataset_xerox\LoteCertidao\json_alss'
 
-    infer_sign(path_img=img_path, json_path=gt_path)
+    test_iou(path_img=img_path, json_path=gt_path)
 
