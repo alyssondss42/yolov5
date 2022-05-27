@@ -18,8 +18,8 @@ def mark_detection(img_name, img, sig_list, detection_pts):
             end_point = (int(det_x_max), int(det_y_max))
 
             img = cv.rectangle(img, start_point, end_point, color=(255, 0, 0), thickness=2)
-            cv.putText(img, str(round(conf, 3)), (int(det_x_min), int(det_y_min) - 10), cv.FONT_HERSHEY_SIMPLEX,
-                       0.4, color=(255, 0, 0), thickness=2)
+            # cv.putText(img, str(round(conf, 3)), (int(det_x_min), int(det_y_min) - 10), cv.FONT_HERSHEY_SIMPLEX,
+            # 0.4, color=(255, 0, 0), thickness=2)
 
     # for sig_gt in sig_list:
     #     x_min = sig_gt['bounding_box']['x']

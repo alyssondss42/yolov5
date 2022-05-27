@@ -29,8 +29,12 @@ def get_error(img_path, json_path):
             pred_count = count_signatures(result_pred=detection.pandas().xyxy[0], thr=0.5)
 
             if pred_count != sig_qtd:
+                # mark_detection(new_img_name, current_img, sig_list=[], detection_pts=detection.pandas().xyxy[0])
+                print('Caso de erro')
+
+            else:
                 mark_detection(new_img_name, current_img, sig_list=[], detection_pts=detection.pandas().xyxy[0])
-                print('entrei')
+                print('Caso de acerto')
 
             print('File {} processed.'.format(filename))
 
